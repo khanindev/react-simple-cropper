@@ -22,17 +22,36 @@ type Position = {
 export type CropperProps = {
   src: string,
   position: Position,
+  ratio: number,
   onChangeEnd: (position: Position) => void
 }
 
-export const Cropper: FC<CropperProps> = ({ src, position, onChangeEnd }) => {
+export enum ImageType {
+    vertical = "vertical",
+    horizontal = "horizontal"
+}
 
+
+// TODO-me: Вертикальные фото
+// + Обработка вертикального перемещения
+// + Определение соотношения сторон
+// TODO-me: После остановки перетаскивания за пределами возможной области сохранять максимально возможную позицию а не текущую
+
+export const Cropper: FC<CropperProps> = ({ src, position, ratio = 1, onChangeEnd }) => {
     const imageContainerRef = React.useRef<HTMLDivElement>();
 
+    const [imageType, setImageType] = React.useState<ImageType | null>(null)
     const [isDragging, setIsDtagging] = React.useState(false)
     const [startPosition, setStartPosition] = React.useState({ left: 0, top: 0 })
     const [completedPosition, setCompletedPosition] = React.useState({ left: 0, top: 0 })
     const [bounding, setBounding] = React.useState({ width: 0, height: 0 })
+
+    React.useEffect(() => {
+        setImageType(null)
+        setStartPosition({ left: 0, top: 0})
+        setCompletedPosition({ left: 0, top: 0})
+        setBounding({ width: 0, height: 0})
+    }, [src])
 
     React.useEffect(() => {
         onChangeEnd(position)
@@ -54,7 +73,12 @@ export const Cropper: FC<CropperProps> = ({ src, position, onChangeEnd }) => {
             if (diffTop > bounding.height / 2 && diffTop < bounding.height / 2 * -1) {
                 imageContainerRef.current?.style.setProperty('--top', `${diffTop}px`);
             } else {
-                imageContainerRef.current?.style.setProperty('--top', `${0}px`);
+
+                if (diffTop < bounding.height / 2 * -1) {
+                    imageContainerRef.current?.style.setProperty('--top', `${bounding.height / 2}px`);
+                } else {
+                    imageContainerRef.current?.style.setProperty('--top', `${bounding.height / 2 * -1}px`);
+                }
             }
 
             if (diffLeft > bounding.width / 2 && diffLeft < bounding.width / 2 * -1) {
@@ -71,7 +95,7 @@ export const Cropper: FC<CropperProps> = ({ src, position, onChangeEnd }) => {
         const mouseUpListener = (e) => {
             setCompletedPosition({
                 top: completedPosition.top + e.clientY - startPosition.top,
-                left: completedPosition.left +e.clientX - startPosition.left
+                left: completedPosition.left + e.clientX - startPosition.left
             })
             setIsDtagging(false)
         }
@@ -108,9 +132,14 @@ export const Cropper: FC<CropperProps> = ({ src, position, onChangeEnd }) => {
         }
     }
 
+    const getImageType = ({ width, height } ): ImageType => {
+        return width / height < ratio ? ImageType.vertical : ImageType.horizontal
+    }
+
     const handleImageLoad = (e: any) => {
         const { width, height } = e.target.getBoundingClientRect()
         const { width: boundingWidth, height: boundingHeight } = calcBounding(imageContainerRef, { width, height })
+        setImageType(getImageType({ width, height }))
 
         setBounding({
             width: boundingWidth,
@@ -120,22 +149,24 @@ export const Cropper: FC<CropperProps> = ({ src, position, onChangeEnd }) => {
 
   return (
       <React.Fragment>
-          <div className={styles["root"]}>
+          <div className={styles["root"]}
+               onTouchStart={(e) => handleMouseDown(e)}
+               onMouseDown={(e) => handleMouseDown(e)}
+          >
               <div className={styles["draggable-container"]}>
                 <div className={styles["image-container"]} ref={imageContainerRef}>
                   <img draggable={false}
                        onLoad={(e) => handleImageLoad(e)}
-                       onTouchStart={(e) => handleMouseDown(e)}
-                       onMouseDown={(e) => handleMouseDown(e)}
                        src={src}
                        alt={src}
-                       className={[styles["image"], styles["horizontal"]].join(" ")}
+                       className={[styles["image"], styles["vertical"]].join(" ")}
                   />
                 </div>
               </div>
           </div>
           { JSON.stringify(bounding, null, 2)}
           { JSON.stringify(position, null, 2)}
+          { JSON.stringify(imageType, null, 2)}
       </React.Fragment>
   )
 }
