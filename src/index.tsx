@@ -22,10 +22,14 @@ type Position = {
 export type CropperProps = {
   src: string,
   position: Position,
+  ratio: number,
   onChangeEnd: (position: Position) => void
 }
 
-export const Cropper: FC<CropperProps> = ({ src, position, onChangeEnd }) => {
+export enum ImageType {
+    horizontal = "horizontal",
+    vertical = "vertical"
+}
 
 // TODO-me: Вертикальные фото
 // + Обработка вертикального перемещения
@@ -34,6 +38,7 @@ export const Cropper: FC<CropperProps> = ({ src, position, onChangeEnd }) => {
 
 export const Cropper: FC<CropperProps> = ({ src, position, ratio = 1, onChangeEnd }) => {
     const imageContainerRef = React.useRef<HTMLDivElement>();
+    const imageRef = React.useRef<HTMLImageElement>();
 
     const [imageType, setImageType] = React.useState<ImageType | null>(null)
     const [isDragging, setIsDtagging] = React.useState(false)
@@ -127,15 +132,43 @@ export const Cropper: FC<CropperProps> = ({ src, position, ratio = 1, onChangeEn
         }
     }
 
+    const getImageType = ({ width, height }: any): ImageType => {
+        if (width / height < ratio) return ImageType.vertical
+        return  ImageType.horizontal
+    }
+
     const handleImageLoad = (e: any) => {
         const { width, height } = e.target.getBoundingClientRect()
-        const { width: boundingWidth, height: boundingHeight } = calcBounding(imageContainerRef, { width, height })
+        setImageType(getImageType({ width, height }))
+    }
 
+    React.useEffect(() => {
+        setStartPosition({
+            top: 0,
+            left: 0,
+        })
+
+        setCompletedPosition({
+            top: 0,
+            left: 0,
+        })
+
+        setBounding({
+            width: 0,
+            height: 0
+        })
+
+        imageContainerRef.current?.style.setProperty('--top', `${0}px`);
+        imageContainerRef.current?.style.setProperty('--left', `${0}px`);
+    }, [src])
+
+    React.useLayoutEffect(() => {
+        const { width: boundingWidth, height: boundingHeight } = calcBounding(imageContainerRef, imageRef.current?.getBoundingClientRect())
         setBounding({
             width: boundingWidth,
             height: boundingHeight
         })
-    }
+    }, [imageType])
 
   return (
       <React.Fragment>
@@ -146,10 +179,11 @@ export const Cropper: FC<CropperProps> = ({ src, position, ratio = 1, onChangeEn
               <div className={styles["draggable-container"]}>
                 <div className={styles["image-container"]} ref={imageContainerRef}>
                   <img draggable={false}
+                       ref={imageRef}
                        onLoad={(e) => handleImageLoad(e)}
                        src={src}
                        alt={src}
-                       className={[styles["image"], styles["vertical"]].join(" ")}
+                       className={[styles["image"], styles[imageType as string]].join(" ")}
                   />
                 </div>
               </div>
