@@ -22,15 +22,10 @@ type Position = {
 export type CropperProps = {
   src: string,
   position: Position,
-  ratio: number,
   onChangeEnd: (position: Position) => void
 }
 
-export enum ImageType {
-    vertical = "vertical",
-    horizontal = "horizontal"
-}
-
+export const Cropper: FC<CropperProps> = ({ src, position, onChangeEnd }) => {
 
 // TODO-me: Вертикальные фото
 // + Обработка вертикального перемещения
@@ -132,14 +127,9 @@ export const Cropper: FC<CropperProps> = ({ src, position, ratio = 1, onChangeEn
         }
     }
 
-    const getImageType = ({ width, height } ): ImageType => {
-        return width / height < ratio ? ImageType.vertical : ImageType.horizontal
-    }
-
     const handleImageLoad = (e: any) => {
         const { width, height } = e.target.getBoundingClientRect()
         const { width: boundingWidth, height: boundingHeight } = calcBounding(imageContainerRef, { width, height })
-        setImageType(getImageType({ width, height }))
 
         setBounding({
             width: boundingWidth,
