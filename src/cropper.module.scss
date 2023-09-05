@@ -52,6 +52,7 @@ body {
 }
 
 .image {
+  user-select: none;
   display: block;
   position: absolute;
   top: 50%;

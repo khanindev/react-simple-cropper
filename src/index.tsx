@@ -31,11 +31,6 @@ export enum ImageType {
     vertical = "vertical"
 }
 
-// TODO-me: Вертикальные фото
-// + Обработка вертикального перемещения
-// + Определение соотношения сторон
-// TODO-me: После остановки перетаскивания за пределами возможной области сохранять максимально возможную позицию а не текущую
-
 export const Cropper: FC<CropperProps> = ({ src, position, ratio = 1, onChangeEnd }) => {
     const imageContainerRef = React.useRef<HTMLDivElement>();
     const imageRef = React.useRef<HTMLImageElement>();
@@ -73,7 +68,7 @@ export const Cropper: FC<CropperProps> = ({ src, position, ratio = 1, onChangeEn
             if (diffTop > bounding.height / 2 && diffTop < bounding.height / 2 * -1) {
                 imageContainerRef.current?.style.setProperty('--top', `${diffTop}px`);
             } else {
-
+                // TODO-me: Перенести в отдельную функцию =)
                 if (diffTop < bounding.height / 2 * -1) {
                     imageContainerRef.current?.style.setProperty('--top', `${bounding.height / 2}px`);
                 } else {
@@ -84,6 +79,7 @@ export const Cropper: FC<CropperProps> = ({ src, position, ratio = 1, onChangeEn
             if (diffLeft > bounding.width / 2 && diffLeft < bounding.width / 2 * -1) {
                 imageContainerRef.current?.style.setProperty('--left', `${diffLeft}px`);
             } else {
+                // TODO-me: Перенести в отдельную функцию =)
                 if (diffLeft < bounding.width / 2 * -1) {
                     imageContainerRef.current?.style.setProperty('--left', `${bounding.width / 2}px`);
                 } else {
@@ -93,10 +89,34 @@ export const Cropper: FC<CropperProps> = ({ src, position, ratio = 1, onChangeEn
         }
 
         const mouseUpListener = (e) => {
+            let topPosition = completedPosition.top + e.clientY - startPosition.top
+            let leftPosition = completedPosition.left + e.clientX - startPosition.left
+
+
+            // TODO-me: Перенести в отдельную функцию =)
+            if (topPosition <= bounding.height / 2 || topPosition >= bounding.height / 2 * -1) {
+                if (topPosition < bounding.height / 2 * -1) {
+                    topPosition = bounding.height / 2
+                } else if (topPosition > bounding.height / 2) {
+                    topPosition = bounding.height / 2 * -1
+                }
+            }
+
+
+            // TODO-me: Перенести в отдельную функцию =)
+            if (leftPosition <= bounding.width / 2 || leftPosition >= bounding.width / 2 * -1) {
+                if (leftPosition <= bounding.width / 2 * -1) {
+                    leftPosition = bounding.width / 2
+                } else {
+                    leftPosition = bounding.width / 2 * -1
+                }
+            }
+
             setCompletedPosition({
-                top: completedPosition.top + e.clientY - startPosition.top,
-                left: completedPosition.left + e.clientX - startPosition.left
+                top: topPosition,
+                left: leftPosition
             })
+
             setIsDtagging(false)
         }
 
